@@ -1,4 +1,7 @@
 # ==================== Java / Maven ====================
+# 下载的 Maven 安装包（无需提交）
+apache-maven-3.9.9-bin.zip
+
 # 编译输出目录
 target/
 *.class

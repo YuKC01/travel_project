@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>旅图足迹 - 旅游攻略平台</title>
+    <title>书香 - 读书笔记分享平台</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -24,12 +24,12 @@
     <div class="max-w-6xl mx-auto px-6 py-3 flex justify-between items-center gap-6 flex-wrap">
         <!-- Logo + 主导航：点击切换独立页面 -->
         <div class="flex items-center gap-8">
-            <h1 class="text-xl font-semibold text-primary cursor-pointer whitespace-nowrap" onclick="showHome()">旅图足迹</h1>
+            <h1 class="text-xl font-semibold text-primary cursor-pointer whitespace-nowrap" onclick="showHome()">书香笔记</h1>
             <div class="flex items-center gap-1 text-sm">
                 <button id="navHome" onclick="showHome()"
                         class="px-3 py-1.5 rounded-lg text-primary font-medium transition">首页</button>
                 <button id="navDest" onclick="showDestinations()"
-                        class="px-3 py-1.5 rounded-lg text-secondary hover:text-primary transition">目的地</button>
+                        class="px-3 py-1.5 rounded-lg text-secondary hover:text-primary transition">作者</button>
                 <!-- 分类：下拉选择，菜单项由攻略 category 字段动态生成 -->
                 <div class="relative">
                     <button id="navCategory" onclick="toggleCategoryMenu(event)"
@@ -46,11 +46,11 @@
         </div>
         <!-- 搜索 + 操作区 -->
         <div class="flex items-center gap-3">
-            <input id="searchInput" placeholder="搜索城市/景点/攻略标题"
+            <input id="searchInput" placeholder="搜索书籍/作者标题"
                    class="px-4 py-2 border border-gray-200 rounded-lg text-sm w-56 focus:outline-none focus:border-primary"
                    onkeypress="if(event.key==='Enter') searchStrategy()">
             <button onclick="searchStrategy()" class="text-sm text-primary hover:text-primary/80">搜索</button>
-            <button onclick="openPublishModal()" class="text-sm bg-primary text-white px-4 py-1.5 rounded-lg hover:bg-primary/90">发布攻略</button>
+            <button onclick="openPublishModal()" class="text-sm bg-primary text-white px-4 py-1.5 rounded-lg hover:bg-primary/90">发布笔记</button>
             <!-- 已登录显示头像+昵称，点击进个人中心；未登录显示登录按钮 -->
             <div id="userArea" class="flex items-center gap-2">
                 <button id="loginBtn" onclick="onLoginBtnClick()" class="text-sm border border-primary text-primary px-4 py-1.5 rounded-lg hover:bg-primary/5">登录</button>
@@ -74,14 +74,14 @@
             </div>
         </div>
 
-        <h2 id="listTitle" class="text-lg font-medium mb-6">精选攻略</h2>
+        <h2 id="listTitle" class="text-lg font-medium mb-6">优秀笔记</h2>
         <div id="strategyList" class="grid grid-cols-3 gap-6">
             <!-- 攻略卡片由JS动态生成 -->
         </div>
 
         <!-- 同城推荐（搜索时展示） -->
         <div id="recommendSection" class="hidden">
-            <h2 class="text-lg font-medium mt-10 mb-6">同城推荐</h2>
+            <h2 class="text-lg font-medium mt-10 mb-6">同作者推荐</h2>
             <div id="recommendList" class="grid grid-cols-3 gap-6"></div>
         </div>
     </div>
@@ -187,7 +187,7 @@
                 <button onclick="loadAdminStrategies(2)" class="text-sm px-3 py-1.5 bg-yellow-50 text-yellow-600 rounded-lg">待审核</button>
                 <button onclick="loadAdminStrategies(1)" class="text-sm px-3 py-1.5 bg-green-50 text-green-600 rounded-lg">已上线</button>
                 <button onclick="loadAdminStrategies(0)" class="text-sm px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg">已下线</button>
-                <button onclick="openAdminPublish()" class="ml-auto text-sm px-4 py-1.5 bg-primary text-white rounded-lg hover:bg-primary/90">+ 新增攻略</button>
+                <button onclick="openAdminPublish()" class="ml-auto text-sm px-4 py-1.5 bg-primary text-white rounded-lg hover:bg-primary/90">+ 新增笔记</button>
             </div>
             <div id="adminStrategyTable" class="bg-white rounded-xl shadow-sm overflow-hidden">
                 <table class="w-full text-sm">
@@ -290,16 +290,15 @@
         <!-- AI 旅游问答模块 -->
         <div class="bg-white rounded-xl shadow-sm p-8 mb-6">
             <h3 class="text-lg font-medium mb-4 flex items-center gap-2">
-                <span>🤖</span> AI 旅游助手
-                <span class="text-xs text-secondary font-normal">已关联当前景点上下文，回答更精准</span>
+                <span>🤖</span> AI 笔记助手
+                <span class="text-xs text-secondary font-normal">已关联当前书籍上下文，回答更精准</span>
             </h3>
             <!-- 问答对话区 -->
             <div id="aiChatBox" class="bg-gray-50 rounded-lg p-4 mb-4 h-64 overflow-y-auto space-y-3">
                 <div class="flex gap-2">
                     <span class="text-lg">🤖</span>
                     <div class="bg-white rounded-lg px-3 py-2 text-sm text-gray-700 shadow-sm">
-                        你好！我是你的旅游小助手，关于这个景点有什么想问的吗？<br>
-                        比如：交通路线、美食推荐、住宿建议、门票价格、最佳游玩季节等~
+                        你好！我是你的阅读小助手，关于这个笔记有什么想问的吗？<br>
                     </div>
                 </div>
             </div>
