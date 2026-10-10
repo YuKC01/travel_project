@@ -1,0 +1,61 @@
+# 配置模板文件
+# 使用方法：复制本文件改名为 application.yml，填入你自己的配置即可
+
+server:
+  port: 8080
+
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://127.0.0.1:3306/travel_map?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
+    username: root
+    password: 你的MySQL密码
+
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6379
+      database: 0
+      timeout: 3000ms
+      connect-timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+
+  profiles:
+    active: dev
+
+mybatis-plus:
+  mapper-locations: classpath:mapper/**/*.xml
+  type-aliases-package: com.travel.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+# JWT 配置
+jwt:
+  secret: 你的JWT密钥
+  expire-time: 86400000
+
+# 高德天气接口配置（需自行到高德开放平台申请）
+weather:
+  amap:
+    key: 你的高德天气API_KEY
+    base-url: https://restapi.amap.com/v3/weather/weatherInfo
+
+# 七牛云对象存储配置（需自行到七牛云注册）
+qiniu:
+  access-key: 你的七牛云AccessKey
+  secret-key: 你的七牛云SecretKey
+  bucket: 你的存储空间名称
+  domain: 你的外链域名
+
+# Swagger 接口文档配置
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    doc-expansion: none

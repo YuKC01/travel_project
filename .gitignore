@@ -1,0 +1,52 @@
+# ==================== Java / Maven ====================
+# 编译输出目录
+target/
+*.class
+*.jar
+*.war
+
+# ==================== IDE ====================
+# IntelliJ IDEA
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# VS Code
+.vscode/
+
+# Eclipse
+.classpath
+.project
+.settings/
+
+# ==================== 系统文件 ====================
+# Windows
+Thumbs.db
+Desktop.ini
+
+# macOS
+.DS_Store
+
+# Linux
+*~
+
+# ==================== 敏感配置（不提交真实配置）====================
+# 真实配置文件含数据库密码、密钥等，只提交模板 application-example.yml
+Yukc_maven_travel/travel_backend/src/main/resources/application.yml
+Yukc_maven_travel/travel_backend/src/main/resources/application-*.yml
+!Yukc_maven_travel/travel_backend/src/main/resources/application-example.yml
+
+# ==================== 日志 ====================
+*.log
+logs/
+
+# ==================== 临时文件 ====================
+*.tmp
+*.bak
+*.swp
+
+# ==================== 个人学习笔记（不提交）====================
+# 仓库只保留纯代码，学习笔记（中文 txt、迁移教程）自己看，不上传
+Yukc_maven_travel/travel_backend/**/*.txt
+项目迁移教程.md

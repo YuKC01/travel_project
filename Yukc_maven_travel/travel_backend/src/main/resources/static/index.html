@@ -1,0 +1,1785 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>旅图足迹 - 旅游攻略平台</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3b82f6',
+                        secondary: '#64748b'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 text-gray-800">
+<!-- 顶部导航 -->
+<nav class="bg-white shadow-sm sticky top-0 z-50">
+    <div class="max-w-6xl mx-auto px-6 py-3 flex justify-between items-center gap-6 flex-wrap">
+        <!-- Logo + 主导航：点击切换独立页面 -->
+        <div class="flex items-center gap-8">
+            <h1 class="text-xl font-semibold text-primary cursor-pointer whitespace-nowrap" onclick="showHome()">旅图足迹</h1>
+            <div class="flex items-center gap-1 text-sm">
+                <button id="navHome" onclick="showHome()"
+                        class="px-3 py-1.5 rounded-lg text-primary font-medium transition">首页</button>
+                <button id="navDest" onclick="showDestinations()"
+                        class="px-3 py-1.5 rounded-lg text-secondary hover:text-primary transition">目的地</button>
+                <!-- 分类：下拉选择，菜单项由攻略 category 字段动态生成 -->
+                <div class="relative">
+                    <button id="navCategory" onclick="toggleCategoryMenu(event)"
+                            class="px-3 py-1.5 rounded-lg text-secondary hover:text-primary transition flex items-center gap-1">
+                        分类<span class="text-xs">▾</span>
+                    </button>
+                    <div id="categoryMenu"
+                         class="hidden absolute left-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-100 py-1 min-w-[140px] z-50">
+                        <!-- 分类项由JS动态生成 -->
+                    </div>
+                </div>
+                <button id="navAdmin" onclick="showAdmin()" class="hidden px-3 py-1.5 rounded-lg text-secondary hover:text-primary transition">管理后台</button>
+            </div>
+        </div>
+        <!-- 搜索 + 操作区 -->
+        <div class="flex items-center gap-3">
+            <input id="searchInput" placeholder="搜索城市/景点/攻略标题"
+                   class="px-4 py-2 border border-gray-200 rounded-lg text-sm w-56 focus:outline-none focus:border-primary"
+                   onkeypress="if(event.key==='Enter') searchStrategy()">
+            <button onclick="searchStrategy()" class="text-sm text-primary hover:text-primary/80">搜索</button>
+            <button onclick="openPublishModal()" class="text-sm bg-primary text-white px-4 py-1.5 rounded-lg hover:bg-primary/90">发布攻略</button>
+            <!-- 已登录显示头像+昵称，点击进个人中心；未登录显示登录按钮 -->
+            <div id="userArea" class="flex items-center gap-2">
+                <button id="loginBtn" onclick="onLoginBtnClick()" class="text-sm border border-primary text-primary px-4 py-1.5 rounded-lg hover:bg-primary/5">登录</button>
+                <button id="profileBtn" onclick="showUserCenter()" class="hidden items-center gap-2 hover:bg-gray-50 px-2 py-1 rounded-lg">
+                    <img id="navAvatar" class="w-8 h-8 rounded-full object-cover border border-gray-200" alt="">
+                    <span id="navNickName" class="text-sm text-gray-700"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<!-- 主内容区 -->
+<main class="max-w-6xl mx-auto px-6 py-8">
+    <!-- 列表页 -->
+    <div id="listPage">
+        <!-- 轮播图 -->
+        <div id="bannerSection" class="mb-8">
+            <div id="bannerContainer" class="relative rounded-xl overflow-hidden shadow-sm h-72 bg-gray-200">
+                <!-- 轮播内容由JS动态生成 -->
+            </div>
+        </div>
+
+        <h2 id="listTitle" class="text-lg font-medium mb-6">精选攻略</h2>
+        <div id="strategyList" class="grid grid-cols-3 gap-6">
+            <!-- 攻略卡片由JS动态生成 -->
+        </div>
+
+        <!-- 同城推荐（搜索时展示） -->
+        <div id="recommendSection" class="hidden">
+            <h2 class="text-lg font-medium mt-10 mb-6">同城推荐</h2>
+            <div id="recommendList" class="grid grid-cols-3 gap-6"></div>
+        </div>
+    </div>
+
+    <!-- 目的地页：按城市聚合展示（独立页面，非锚点滚动） -->
+    <div id="destinationPage" class="hidden">
+        <!-- 城市总览 -->
+        <div id="cityGridSection">
+            <h2 class="text-lg font-medium mb-6">目的地 · 按城市浏览</h2>
+            <div id="cityGrid" class="grid grid-cols-3 gap-6">
+                <!-- 城市卡片由JS动态生成 -->
+            </div>
+        </div>
+        <!-- 某城市下的攻略列表（子视图） -->
+        <div id="cityStrategySection" class="hidden">
+            <button onclick="backToCityGrid()" class="text-secondary text-sm mb-4 hover:text-primary">← 返回全部目的地</button>
+            <h2 id="cityStrategyTitle" class="text-lg font-medium mb-6"></h2>
+            <div id="cityStrategyList" class="grid grid-cols-3 gap-6"></div>
+        </div>
+    </div>
+
+    <!-- 分类页：按 category 字段筛选 + 标签筛选 -->
+    <div id="categoryPage" class="hidden">
+        <h2 class="text-lg font-medium mb-4">分类浏览</h2>
+        <!-- 分类筛选 -->
+        <div class="mb-3">
+            <span class="text-sm text-secondary mr-2">分类：</span>
+            <span id="categoryChips" class="inline-flex flex-wrap gap-2 align-middle">
+                <!-- 分类快捷切换由JS动态生成 -->
+            </span>
+        </div>
+        <!-- 标签筛选 -->
+        <div class="mb-6">
+            <span class="text-sm text-secondary mr-2">标签：</span>
+            <span id="tagChips" class="inline-flex flex-wrap gap-2 align-middle">
+                <!-- 标签筛选由JS动态生成 -->
+            </span>
+        </div>
+        <div id="categoryStrategyList" class="grid grid-cols-3 gap-6"></div>
+    </div>
+
+    <!-- 个人中心页 -->
+    <div id="userCenterPage" class="hidden">
+        <div class="bg-white rounded-xl shadow-sm p-6 mb-6 flex items-center gap-6">
+            <img id="ucAvatar" class="w-20 h-20 rounded-full object-cover border-2 border-primary" alt="">
+            <div>
+                <h2 id="ucNickName" class="text-xl font-semibold mb-1"></h2>
+                <p class="text-sm text-secondary">用户名：<span id="ucUsername"></span></p>
+                <p class="text-sm text-secondary mt-1">
+                    <span id="ucRole" class="px-2 py-0.5 rounded text-xs bg-blue-50 text-blue-600"></span>
+                </p>
+            </div>
+            <div class="ml-auto flex gap-2">
+                <button onclick="showHome()" class="text-sm border border-gray-200 text-secondary px-4 py-2 rounded-lg hover:bg-gray-50">返回首页</button>
+                <button onclick="onLoginBtnClick()" class="text-sm border border-gray-200 text-secondary px-4 py-2 rounded-lg hover:bg-gray-50">退出登录</button>
+            </div>
+        </div>
+
+        <!-- Tab 切换 -->
+        <div class="flex gap-2 mb-6 border-b">
+            <button onclick="switchUCTab('published')" id="tabPublished" class="px-4 py-2 text-sm font-medium border-b-2 border-primary text-primary">我的发布</button>
+            <button onclick="switchUCTab('likes')" id="tabLikes" class="px-4 py-2 text-sm text-secondary border-b-2 border-transparent hover:text-primary">我的点赞</button>
+            <button onclick="switchUCTab('collects')" id="tabCollects" class="px-4 py-2 text-sm text-secondary border-b-2 border-transparent hover:text-primary">我的收藏</button>
+            <button onclick="switchUCTab('comments')" id="tabComments" class="px-4 py-2 text-sm text-secondary border-b-2 border-transparent hover:text-primary">我的评论</button>
+        </div>
+
+        <!-- 我的发布 -->
+        <div id="ucPublished" class="uc-panel">
+            <div id="publishedList" class="space-y-4"></div>
+        </div>
+        <!-- 我的点赞 -->
+        <div id="ucLikes" class="uc-panel hidden">
+            <div id="likesList" class="grid grid-cols-3 gap-6"></div>
+        </div>
+        <!-- 我的收藏 -->
+        <div id="ucCollects" class="uc-panel hidden">
+            <div id="collectsList" class="grid grid-cols-3 gap-6"></div>
+        </div>
+        <!-- 我的评论 -->
+        <div id="ucComments" class="uc-panel hidden">
+            <div id="commentsList" class="space-y-4"></div>
+        </div>
+    </div>
+
+    <!-- 管理员后台页 -->
+    <div id="adminPage" class="hidden">
+        <h2 class="text-xl font-semibold mb-6">管理员后台</h2>
+
+        <!-- 统计面板 -->
+        <div id="statsPanel" class="grid grid-cols-4 gap-4 mb-6"></div>
+
+        <!-- Tab 切换 -->
+        <div class="flex gap-2 mb-6 border-b">
+            <button onclick="switchAdminTab('strategies')" id="adminTabStrategies" class="px-4 py-2 text-sm font-medium border-b-2 border-primary text-primary">攻略管理</button>
+            <button onclick="switchAdminTab('users')" id="adminTabUsers" class="px-4 py-2 text-sm text-secondary border-b-2 border-transparent hover:text-primary">用户管理</button>
+            <button onclick="switchAdminTab('hot')" id="adminTabHot" class="px-4 py-2 text-sm text-secondary border-b-2 border-transparent hover:text-primary">热门排行</button>
+        </div>
+
+        <!-- 攻略管理 -->
+        <div id="adminStrategies" class="admin-panel">
+            <div class="flex gap-2 mb-4">
+                <button onclick="loadAdminStrategies(null)" class="text-sm px-3 py-1.5 bg-primary text-white rounded-lg">全部</button>
+                <button onclick="loadAdminStrategies(2)" class="text-sm px-3 py-1.5 bg-yellow-50 text-yellow-600 rounded-lg">待审核</button>
+                <button onclick="loadAdminStrategies(1)" class="text-sm px-3 py-1.5 bg-green-50 text-green-600 rounded-lg">已上线</button>
+                <button onclick="loadAdminStrategies(0)" class="text-sm px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg">已下线</button>
+                <button onclick="openAdminPublish()" class="ml-auto text-sm px-4 py-1.5 bg-primary text-white rounded-lg hover:bg-primary/90">+ 新增攻略</button>
+            </div>
+            <div id="adminStrategyTable" class="bg-white rounded-xl shadow-sm overflow-hidden">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50 text-secondary">
+                        <tr>
+                            <th class="px-4 py-3 text-left">ID</th>
+                            <th class="px-4 py-3 text-left">标题</th>
+                            <th class="px-4 py-3 text-left">城市</th>
+                            <th class="px-4 py-3 text-left">分类</th>
+                            <th class="px-4 py-3 text-left">状态</th>
+                            <th class="px-4 py-3 text-left">浏览</th>
+                            <th class="px-4 py-3 text-left">点赞</th>
+                            <th class="px-4 py-3 text-left">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminStrategyTbody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 用户管理 -->
+        <div id="adminUsers" class="admin-panel hidden">
+            <div id="adminUserTable" class="bg-white rounded-xl shadow-sm overflow-hidden">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50 text-secondary">
+                        <tr>
+                            <th class="px-4 py-3 text-left">ID</th>
+                            <th class="px-4 py-3 text-left">用户名</th>
+                            <th class="px-4 py-3 text-left">昵称</th>
+                            <th class="px-4 py-3 text-left">邮箱</th>
+                            <th class="px-4 py-3 text-left">角色</th>
+                            <th class="px-4 py-3 text-left">状态</th>
+                            <th class="px-4 py-3 text-left">注册时间</th>
+                            <th class="px-4 py-3 text-left">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminUserTbody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 热门排行 -->
+        <div id="adminHot" class="admin-panel hidden">
+            <div id="hotList" class="space-y-3"></div>
+        </div>
+    </div>
+
+    <!-- 详情页 -->
+    <div id="detailPage" class="hidden">
+        <button onclick="backFromDetail()" class="text-secondary text-sm mb-4 hover:text-primary">← 返回</button>
+        <div class="bg-white rounded-xl shadow-sm p-8 mb-6">
+            <div class="flex justify-between items-start mb-4">
+                <h2 id="detailTitle" class="text-2xl font-semibold"></h2>
+                <!-- 编辑/删除（管理员可见，后端校验作者或管理员权限） -->
+                <div id="authorActions" class="hidden flex gap-2 shrink-0 ml-4">
+                    <button onclick="openEditModal()" class="text-sm border border-primary text-primary px-3 py-1.5 rounded-lg hover:bg-primary/5">编辑</button>
+                    <button onclick="deleteStrategy()" class="text-sm border border-red-500 text-red-500 px-3 py-1.5 rounded-lg hover:bg-red-50">删除</button>
+                </div>
+            </div>
+            <div class="flex flex-wrap items-center gap-3 text-sm text-secondary mb-2">
+                <span id="detailCity"></span>
+                <span>·</span>
+                <span id="detailSpot"></span>
+                <span>·</span>
+                <span id="detailTime"></span>
+                <span>·</span>
+                <span>👁 <span id="detailViewCount">0</span></span>
+                <span id="detailTag" class="hidden px-2 py-0.5 text-xs rounded bg-green-50 text-green-600"></span>
+                <span id="detailCategory" class="hidden px-2 py-0.5 text-xs rounded bg-blue-50 text-blue-600"></span>
+                <span id="detailHot" class="hidden px-2 py-0.5 text-xs rounded bg-red-500 text-white">热门</span>
+            </div>
+
+            <!-- 天气与出行提示 -->
+            <div id="weatherCard" class="flex items-center gap-6 bg-sky-50 rounded-lg px-5 py-3 mb-6 text-sm">
+                <span>🌤 天气：<b id="detailWeather">--</b></span>
+                <span>🌡 温度：<b id="detailTemperature">--</b></span>
+                <span id="detailTravelTip" class="text-secondary"></span>
+            </div>
+
+            <img id="detailImg" class="w-full h-80 object-cover rounded-lg mb-6" alt="">
+            <div id="detailContent" class="text-gray-700 leading-relaxed whitespace-pre-wrap mb-8"></div>
+
+            <!-- 互动按钮区 -->
+            <div class="flex items-center gap-6 border-t pt-4">
+                <button id="likeBtn" onclick="toggleLike()" class="flex items-center gap-2 text-sm text-secondary hover:text-red-500 transition">
+                    <span>👍</span>
+                    <span id="likeCount">0</span>
+                </button>
+                <button id="collectBtn" onclick="toggleCollect()" class="flex items-center gap-2 text-sm text-secondary hover:text-yellow-500 transition">
+                    <span>⭐</span>
+                    <span id="collectCount">0</span>
+                </button>
+                <div class="flex items-center gap-2 text-sm text-secondary">
+                    <span>💬</span>
+                    <span id="commentCount">0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI 旅游问答模块 -->
+        <div class="bg-white rounded-xl shadow-sm p-8 mb-6">
+            <h3 class="text-lg font-medium mb-4 flex items-center gap-2">
+                <span>🤖</span> AI 旅游助手
+                <span class="text-xs text-secondary font-normal">已关联当前景点上下文，回答更精准</span>
+            </h3>
+            <!-- 问答对话区 -->
+            <div id="aiChatBox" class="bg-gray-50 rounded-lg p-4 mb-4 h-64 overflow-y-auto space-y-3">
+                <div class="flex gap-2">
+                    <span class="text-lg">🤖</span>
+                    <div class="bg-white rounded-lg px-3 py-2 text-sm text-gray-700 shadow-sm">
+                        你好！我是你的旅游小助手，关于这个景点有什么想问的吗？<br>
+                        比如：交通路线、美食推荐、住宿建议、门票价格、最佳游玩季节等~
+                    </div>
+                </div>
+            </div>
+            <!-- 快捷问题 -->
+            <div class="flex flex-wrap gap-2 mb-3">
+                <button onclick="askAiQuick('怎么去？')" class="text-xs px-3 py-1 bg-blue-50 text-blue-600 rounded-full hover:bg-blue-100">🚇 怎么去？</button>
+                <button onclick="askAiQuick('有什么美食？')" class="text-xs px-3 py-1 bg-orange-50 text-orange-600 rounded-full hover:bg-orange-100">🍜 美食推荐</button>
+                <button onclick="askAiQuick('门票多少钱？')" class="text-xs px-3 py-1 bg-green-50 text-green-600 rounded-full hover:bg-green-100">🎫 门票价格</button>
+                <button onclick="askAiQuick('住哪里比较好？')" class="text-xs px-3 py-1 bg-purple-50 text-purple-600 rounded-full hover:bg-purple-100">🏨 住宿建议</button>
+                <button onclick="askAiQuick('需要注意什么？')" class="text-xs px-3 py-1 bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200">📋 注意事项</button>
+            </div>
+            <!-- 输入区 -->
+            <div class="flex gap-2">
+                <input id="aiQuestionInput" type="text" placeholder="输入你的旅游问题..."
+                       class="flex-1 border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-primary"
+                       onkeypress="if(event.key==='Enter') askAi()">
+                <button onclick="askAi()" class="bg-primary text-white text-sm px-5 py-2 rounded-lg hover:bg-primary/90 whitespace-nowrap">发送</button>
+            </div>
+        </div>
+
+        <!-- 评论区 -->
+        <div class="bg-white rounded-xl shadow-sm p-8">
+            <h3 class="text-lg font-medium mb-6">评论区</h3>
+
+            <!-- 发表评论 -->
+            <div class="mb-8">
+                <textarea id="commentInput" rows="3" placeholder="写下你的评论..."
+                          class="w-full border border-gray-200 rounded-lg p-3 text-sm focus:outline-none focus:border-primary resize-none"></textarea>
+                <div class="flex justify-end mt-2">
+                    <button onclick="addComment()" class="bg-primary text-white text-sm px-5 py-2 rounded-lg hover:bg-primary/90">发布评论</button>
+                </div>
+            </div>
+
+            <!-- 评论列表 -->
+            <div id="commentList" class="space-y-4">
+                <!-- 评论由JS动态生成 -->
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- 登录弹窗 -->
+<div id="loginModal" class="hidden fixed inset-0 bg-black/30 flex items-center justify-center z-50">
+    <div class="bg-white rounded-xl p-8 w-96">
+        <h3 class="text-lg font-medium mb-6">用户登录</h3>
+        <input id="username" placeholder="用户名" class="w-full border border-gray-200 rounded-lg px-4 py-2.5 mb-4 text-sm focus:outline-none focus:border-primary">
+        <input id="password" type="password" placeholder="密码" class="w-full border border-gray-200 rounded-lg px-4 py-2.5 mb-6 text-sm focus:outline-none focus:border-primary">
+        <button onclick="login()" class="w-full bg-primary text-white py-2.5 rounded-lg hover:bg-primary/90">登录</button>
+        <p class="text-xs text-center mt-4">
+            <span class="text-gray-400">还没有账号？</span>
+            <a href="javascript:void(0)" onclick="switchToRegister()" class="text-primary hover:underline">去注册</a>
+        </p>
+    </div>
+</div>
+
+<!-- 注册弹窗 -->
+<div id="registerModal" class="hidden fixed inset-0 bg-black/30 flex items-center justify-center z-50">
+    <div class="bg-white rounded-xl p-8 w-96">
+        <h3 class="text-lg font-medium mb-6">用户注册</h3>
+        <input id="regUsername" placeholder="用户名（2-20个字符）" class="w-full border border-gray-200 rounded-lg px-4 py-2.5 mb-4 text-sm focus:outline-none focus:border-primary">
+        <input id="regPassword" type="password" placeholder="密码（6-20个字符）" class="w-full border border-gray-200 rounded-lg px-4 py-2.5 mb-4 text-sm focus:outline-none focus:border-primary">
+        <input id="regEmail" placeholder="邮箱（选填）" class="w-full border border-gray-200 rounded-lg px-4 py-2.5 mb-6 text-sm focus:outline-none focus:border-primary">
+        <button onclick="register()" class="w-full bg-primary text-white py-2.5 rounded-lg hover:bg-primary/90">注册</button>
+        <p class="text-xs text-center mt-4">
+            <span class="text-gray-400">已有账号？</span>
+            <a href="javascript:void(0)" onclick="switchToLogin()" class="text-primary hover:underline">去登录</a>
+        </p>
+    </div>
+</div>
+
+<!-- 发布/编辑攻略弹窗 -->
+<div id="publishModal" class="hidden fixed inset-0 bg-black/30 flex items-center justify-center z-50 overflow-y-auto">
+    <div class="bg-white rounded-xl p-8 w-[560px] my-10">
+        <h3 id="publishTitle" class="text-lg font-medium mb-6">发布攻略</h3>
+        <input id="pubTitle" placeholder="攻略标题" class="w-full border border-gray-200 rounded-lg px-4 py-2.5 mb-4 text-sm focus:outline-none focus:border-primary">
+        <div class="flex gap-4 mb-4">
+            <input id="pubCity" placeholder="城市名称，如：北京" class="w-1/2 border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary">
+            <input id="pubSpot" placeholder="景点名称，如：故宫" class="w-1/2 border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary">
+        </div>
+        <div class="flex gap-4 mb-4">
+            <select id="pubTag" class="w-1/2 border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary">
+                <option value="">收费标签（选填）</option>
+                <option value="免费">免费</option>
+                <option value="收费">收费</option>
+            </select>
+            <select id="pubCategory" class="w-1/2 border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary">
+                <option value="">内容分类（选填）</option>
+                <option value="历史古迹">历史古迹</option>
+                <option value="自然风光">自然风光</option>
+                <option value="美食打卡">美食打卡</option>
+            </select>
+        </div>
+        <!-- 封面图上传 -->
+        <div class="mb-4">
+            <div class="flex items-center gap-3">
+                <input type="file" id="pubImgFile" accept="image/*" class="text-sm" onchange="uploadCover()">
+                <img id="pubImgPreview" class="hidden w-24 h-16 object-cover rounded-lg border border-gray-200" alt="">
+            </div>
+            <input id="pubImgUrl" type="hidden">
+        </div>
+        <textarea id="pubContent" rows="6" placeholder="攻略正文..."
+                  class="w-full border border-gray-200 rounded-lg p-3 text-sm focus:outline-none focus:border-primary resize-none mb-6"></textarea>
+        <div class="flex gap-3">
+            <button onclick="submitPublish()" class="flex-1 bg-primary text-white py-2.5 rounded-lg hover:bg-primary/90">提交</button>
+            <button onclick="closePublishModal()" class="flex-1 border border-gray-200 text-secondary py-2.5 rounded-lg hover:bg-gray-50">取消</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ===================== 全局状态 =====================
+    // 后端登录接口返回 UserLoginVO：{ id, username, isAdmin, token }
+    let token = localStorage.getItem('token') || '';
+    let currentUserId = localStorage.getItem('userId') || '';
+    let currentUsername = localStorage.getItem('username') || '';
+    let currentNickName = localStorage.getItem('nickName') || '';
+    let currentAvatar = localStorage.getItem('avatar') || '';
+    let isAdmin = localStorage.getItem('isAdmin') === '1' ? 1 : 0;
+
+    let currentStrategyId = null;
+    let currentDetail = null;       // 当前详情数据（编辑时回填用）
+    let editingId = null;           // 非空 = 编辑模式
+    let isLiked = false;
+    let isCollected = false;
+    // 后端热门阈值：浏览量 >= 20 判定为热门
+    const HOT_THRESHOLD = 20;
+
+    // ===== 多页面导航状态 =====
+    // /strategy/list 全量攻略缓存（目的地/分类页本地筛选，避免重复请求）
+    let allStrategies = [];
+    // 最近一次搜索关键词（首页返回时保留搜索结果）
+    let lastKeyword = '';
+    // 详情页来源记忆：{ type: 'home'|'destination'|'city'|'category', param }
+    let detailReturn = null;
+    let currentCity = '';
+    let currentCategory = '';
+    let currentTag = '';
+    // 已知分类的展示顺序，数据里出现的其他分类追加在后面
+    const CATEGORY_ORDER = ['历史古迹', '自然风光', '美食打卡'];
+
+    // 页面初始化
+    window.onload = function() {
+        updateLoginBtn();
+        showHome();
+        // 点击分类菜单外部时收起下拉
+        document.addEventListener('click', closeCategoryMenuOnOutside);
+    }
+
+    // ===================== 多视图切换（独立页面，非滚动锚点） =====================
+    // 顶层四个视图：首页 / 目的地 / 分类 / 详情，互斥显示
+    const MAIN_VIEWS = ['listPage', 'destinationPage', 'categoryPage', 'userCenterPage', 'adminPage', 'detailPage'];
+    function switchMainView(viewId) {
+        MAIN_VIEWS.forEach(id => {
+            document.getElementById(id).classList.toggle('hidden', id !== viewId);
+        });
+        window.scrollTo(0, 0);
+    }
+
+    // 更新导航高亮
+    function setActiveNav(tab) {
+        const navMap = {
+            home: { el: 'navHome', base: 'px-3 py-1.5 rounded-lg transition' },
+            destination: { el: 'navDest', base: 'px-3 py-1.5 rounded-lg transition' },
+            category: { el: 'navCategory', base: 'px-3 py-1.5 rounded-lg transition flex items-center gap-1' }
+        };
+        Object.entries(navMap).forEach(([key, conf]) => {
+            const el = document.getElementById(conf.el);
+            el.className = conf.base + (key === tab
+                ? ' text-primary font-medium'
+                : ' text-secondary hover:text-primary');
+        });
+        closeCategoryMenu();
+    }
+
+    // 拉取全量上线攻略并刷新缓存，同时重建分类下拉
+    // /strategy/list 返回的实体不带天气，这里再按城市调用搜索接口（后端会填充天气），
+    // 把 weather/temperature 合并回 allStrategies，保证首页/目的地/分类卡片都能显示天气
+    function fetchAllStrategies() {
+        return request('/strategy/list').then(res => {
+            if (res.code === 200) {
+                allStrategies = (res.data || []).filter(item => item.status !== 0);
+                buildCategoryMenu();
+                return fillWeatherForAll();
+            } else if (res.code !== 401) {
+                allStrategies = [];
+            }
+            return allStrategies;
+        });
+    }
+
+    // 为全量攻略填充天气：提取去重城市，并发调用搜索接口（城市精确查询会返回带天气的卡片）
+    function fillWeatherForAll() {
+        const cities = [...new Set(allStrategies.map(i => i.cityName).filter(Boolean))];
+        if (!cities.length) return Promise.resolve(allStrategies);
+        // 城市数过多时限制并发，避免请求风暴
+        const tasks = cities.map(city =>
+            request('/strategy/search?keyword=' + encodeURIComponent(city))
+                .then(res => {
+                    if (res.code === 200 && res.data && res.data.targetList) {
+                        const weatherMap = new Map();
+                        res.data.targetList.forEach(c => weatherMap.set(c.id, c));
+                        allStrategies.forEach(item => {
+                            const card = weatherMap.get(item.id);
+                            if (card) {
+                                item.weather = card.weather;
+                                item.temperature = card.temperature;
+                            }
+                        });
+                    }
+                })
+                .catch(() => {})
+        );
+        return Promise.all(tasks).then(() => allStrategies);
+    }
+
+    // 缓存为空时才请求，已有缓存直接复用
+    function ensureStrategies() {
+        return allStrategies.length ? Promise.resolve(allStrategies) : fetchAllStrategies();
+    }
+
+    // ===================== 通用工具 =====================
+    // HTML转义，防止XSS（评论内容、标题等用户输入渲染前必须转义）
+    function esc(s) {
+        return String(s ?? '').replace(/[&<>"']/g, c => ({
+            '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+        }[c]));
+    }
+
+    // 统一请求封装：自动携带 JWT，全局处理401（登录过期）
+    function request(url, method = 'GET', data = null) {
+        const options = { method, headers: {} };
+        if (token) options.headers['Authorization'] = 'Bearer ' + token;
+        if (data) {
+            options.headers['Content-Type'] = 'application/json';
+            options.body = JSON.stringify(data);
+        }
+        return fetch(url, options)
+            .then(res => res.json())
+            .catch(() => ({ code: 500, msg: '网络异常，请稍后重试' }))
+            .then(res => {
+                if (res.code === 401) {
+                    // 拦截器返回：token缺失/过期/无效
+                    clearLogin();
+                    alert(res.msg || '请先登录');
+                }
+                return res;
+            });
+    }
+
+    // 清除登录态
+    function clearLogin() {
+        token = ''; currentUserId = ''; currentUsername = ''; currentNickName = ''; currentAvatar = ''; isAdmin = 0;
+        localStorage.removeItem('token');
+        localStorage.removeItem('userId');
+        localStorage.removeItem('username');
+        localStorage.removeItem('nickName');
+        localStorage.removeItem('avatar');
+        localStorage.removeItem('isAdmin');
+        updateLoginBtn();
+    }
+
+    // 未登录时直接弹出登录框
+    function requireLogin() {
+        if (token) return true;
+        showLoginModal();
+        return false;
+    }
+
+    // ===================== 登录 / 注册 =====================
+    function updateLoginBtn() {
+        const loginBtn = document.getElementById('loginBtn');
+        const profileBtn = document.getElementById('profileBtn');
+        const navAvatar = document.getElementById('navAvatar');
+        const navNickName = document.getElementById('navNickName');
+        const navAdmin = document.getElementById('navAdmin');
+        if (token) {
+            loginBtn.classList.add('hidden');
+            profileBtn.classList.remove('hidden');
+            profileBtn.classList.add('flex');
+            navAvatar.src = currentAvatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + encodeURIComponent(currentUsername);
+            navNickName.textContent = currentNickName || currentUsername || '用户';
+            // 管理员才显示管理后台入口
+            if (navAdmin) navAdmin.classList.toggle('hidden', isAdmin !== 1);
+        } else {
+            loginBtn.classList.remove('hidden');
+            profileBtn.classList.add('hidden');
+            profileBtn.classList.remove('flex');
+            if (navAdmin) navAdmin.classList.add('hidden');
+        }
+    }
+
+    // 已登录点击 = 退出登录；未登录点击 = 打开登录框
+    function onLoginBtnClick() {
+        if (token) {
+            if (confirm('确定退出登录吗？')) clearLogin();
+        } else {
+            showLoginModal();
+        }
+    }
+
+    function showLoginModal() {
+        document.getElementById('registerModal').classList.add('hidden');
+        document.getElementById('loginModal').classList.remove('hidden');
+    }
+
+    function showRegisterModal() {
+        document.getElementById('loginModal').classList.add('hidden');
+        document.getElementById('registerModal').classList.remove('hidden');
+    }
+
+    function switchToRegister() {
+        document.getElementById('loginModal').classList.add('hidden');
+        showRegisterModal();
+    }
+
+    function switchToLogin() {
+        document.getElementById('registerModal').classList.add('hidden');
+        showLoginModal();
+    }
+
+    // 注册：对齐 UserRegisterDTO 校验规则（用户名2-20、密码6-20、邮箱选填）
+    function register() {
+        const username = document.getElementById('regUsername').value.trim();
+        const password = document.getElementById('regPassword').value.trim();
+        const email = document.getElementById('regEmail').value.trim();
+
+        if (!username || !password) return alert('请输入用户名和密码');
+        if (username.length < 2 || username.length > 20) return alert('用户名长度需在2-20个字符');
+        if (password.length < 6 || password.length > 20) return alert('密码长度需在6-20个字符');
+        if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return alert('邮箱格式不正确');
+
+        request('/user/register', 'POST', { username, password, email: email || null }).then(res => {
+            if (res.code === 200) {
+                alert('注册成功，请登录');
+                document.getElementById('regUsername').value = '';
+                document.getElementById('regPassword').value = '';
+                document.getElementById('regEmail').value = '';
+                switchToLogin();
+            } else if (res.code !== 401) {
+                alert(res.msg || '注册失败');
+            }
+        });
+    }
+
+    // 登录：后端返回 { id, username, isAdmin, token }
+    function login() {
+        const username = document.getElementById('username').value.trim();
+        const password = document.getElementById('password').value;
+        if (!username || !password) return alert('请输入账号密码');
+
+        request('/user/login', 'POST', { username, password }).then(res => {
+            if (res.code === 200 && res.data) {
+                token = res.data.token;
+                currentUserId = String(res.data.id ?? '');
+                currentUsername = res.data.username || '';
+                currentNickName = res.data.nickName || '';
+                currentAvatar = res.data.avatar || '';
+                isAdmin = Number(res.data.isAdmin) === 1 ? 1 : 0;
+                localStorage.setItem('token', token);
+                localStorage.setItem('userId', currentUserId);
+                localStorage.setItem('username', currentUsername);
+                localStorage.setItem('nickName', currentNickName);
+                localStorage.setItem('avatar', currentAvatar);
+                localStorage.setItem('isAdmin', isAdmin);
+                updateLoginBtn();
+                document.getElementById('loginModal').classList.add('hidden');
+                document.getElementById('username').value = '';
+                document.getElementById('password').value = '';
+                alert('登录成功，欢迎 ' + currentUsername);
+            } else if (res.code !== 401) {
+                alert(res.msg || '登录失败');
+            }
+        });
+    }
+
+    // ===================== 首页 / 搜索 =====================
+    // 首页：切回首页视图并加载（保留上次搜索关键词）
+    function showHome() {
+        setActiveNav('home');
+        switchMainView('listPage');
+        document.getElementById('recommendSection').classList.add('hidden');
+        loadBanner();
+        loadStrategyList(lastKeyword);
+    }
+
+    // 轮播图：取浏览量最高且有封面的攻略
+    let bannerIndex = 0;
+    let bannerTimer = null;
+    function loadBanner() {
+        request('/strategy/banner?limit=5').then(res => {
+            const list = (res.data || []).filter(i => i.imgUrl);
+            const container = document.getElementById('bannerContainer');
+            if (!list.length) {
+                container.classList.add('hidden');
+                return;
+            }
+            container.classList.remove('hidden');
+            bannerIndex = 0;
+            container.innerHTML = list.map((item, idx) => `
+                <div class="banner-slide absolute inset-0 transition-opacity duration-500 ${idx === 0 ? 'opacity-100' : 'opacity-0'}" onclick="openDetail(${item.id})">
+                    <img src="${esc(item.imgUrl)}" class="w-full h-full object-cover cursor-pointer" alt="">
+                    <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-6">
+                        <h3 class="text-white text-xl font-semibold">${esc(item.title)}</h3>
+                        <p class="text-white/80 text-sm mt-1">${esc(item.cityName)} · ${esc(item.spotName)}</p>
+                    </div>
+                </div>
+            `).join('') + `
+                <button onclick="prevBanner()" class="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/70 hover:bg-white text-gray-700 flex items-center justify-center">‹</button>
+                <button onclick="nextBanner()" class="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/70 hover:bg-white text-gray-700 flex items-center justify-center">›</button>
+            `;
+            // 自动轮播
+            if (bannerTimer) clearInterval(bannerTimer);
+            bannerTimer = setInterval(nextBanner, 4000);
+        });
+    }
+
+    function showBanner(idx) {
+        const slides = document.querySelectorAll('.banner-slide');
+        if (!slides.length) return;
+        bannerIndex = (idx + slides.length) % slides.length;
+        slides.forEach((s, i) => s.classList.toggle('opacity-100', i === bannerIndex));
+    }
+    function prevBanner() { showBanner(bannerIndex - 1); }
+    function nextBanner() { showBanner(bannerIndex + 1); }
+
+    // 加载攻略列表：无关键词=首页全量，有关键词=搜索
+    function loadStrategyList(keyword) {
+        if (keyword) {
+            // 搜索场景：SearchStrategyVO { targetList, recommendList, msg }
+            const url = '/strategy/search?keyword=' + encodeURIComponent(keyword);
+            document.getElementById('listTitle').textContent = '搜索结果：' + keyword;
+            document.getElementById('bannerSection').classList.add('hidden');
+            renderList('strategyList', []);
+            request(url).then(res => {
+                if (res.code === 200) {
+                    const data = res.data || {};
+                    renderList('strategyList', data.targetList || []);
+                    renderRecommend(data.recommendList, data.msg);
+                } else if (res.code !== 401) {
+                    renderList('strategyList', []);
+                    renderRecommend(null, res.msg || '搜索失败');
+                }
+            });
+        } else {
+            // 首页场景：返回 Strategy 实体数组，刷新缓存供目的地/分类页复用
+            document.getElementById('recommendSection').classList.add('hidden');
+            document.getElementById('bannerSection').classList.remove('hidden');
+            document.getElementById('listTitle').textContent = '精选攻略';
+            renderList('strategyList', []);
+            document.getElementById('strategyList').innerHTML =
+                '<p class="text-secondary col-span-3 text-center py-12">加载中...</p>';
+            fetchAllStrategies().then(() => renderList('strategyList', allStrategies));
+        }
+    }
+
+    // 搜索攻略：切到首页视图展示结果
+    function searchStrategy() {
+        lastKeyword = document.getElementById('searchInput').value.trim();
+        setActiveNav('home');
+        switchMainView('listPage');
+        loadStrategyList(lastKeyword);
+    }
+
+    // 通用：渲染攻略卡片网格
+    function renderList(containerId, list) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        if (!list || list.length === 0) {
+            container.innerHTML = '<p class="text-secondary col-span-3 text-center py-12">暂无攻略数据</p>';
+            return;
+        }
+        container.innerHTML = list.map(renderCard).join('');
+    }
+
+    // 渲染同城推荐（仅搜索场景，后端城市搜索时为null）
+    function renderRecommend(recommendList, msg) {
+        const section = document.getElementById('recommendSection');
+        const container = document.getElementById('recommendList');
+        if (!recommendList || recommendList.length === 0) {
+            section.classList.add('hidden');
+            // 主列表为空时展示后端提示（如：未找到相关攻略）
+            if (msg) {
+                document.getElementById('strategyList').innerHTML =
+                    '<p class="text-secondary col-span-3 text-center py-12">' + esc(msg) + '</p>';
+            }
+            return;
+        }
+        section.classList.remove('hidden');
+        container.innerHTML = recommendList.map(renderCard).join('');
+    }
+
+    // 单张卡片渲染
+    // 兼容两种数据：首页 Strategy 实体 / 搜索 StrategyCardVO（含weather、temperature、tag）
+    function renderCard(item) {
+        // 首页实体无isHot字段，与后端同规则：浏览量>=20判定热门
+        const hot = item.isHot === true || (item.viewCount || 0) >= HOT_THRESHOLD;
+        const weatherLine = item.weather
+            ? `<p class="text-xs text-sky-600 mb-3">🌤 ${esc(item.weather)} · ${esc(item.temperature || '--')}</p>`
+            : '';
+        return `
+            <div class="bg-white rounded-xl shadow-sm overflow-hidden cursor-pointer hover:shadow-md transition" onclick="openDetail(${item.id})">
+                <div class="relative w-full h-48">
+                    <img src="${esc(item.imgUrl) || 'https://picsum.photos/400/250?random=' + item.id}" class="w-full h-full object-cover" alt="">
+                    ${hot ? '<span class="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-0.5 rounded">热门</span>' : ''}
+                    ${item.tag ? `<span class="absolute top-2 right-2 bg-white/90 text-gray-600 text-xs px-2 py-0.5 rounded">${esc(item.tag)}</span>` : ''}
+                </div>
+                <div class="p-5">
+                    <h3 class="font-medium mb-2 truncate">${esc(item.title || '无标题攻略')}</h3>
+                    <p class="text-xs text-secondary mb-3">${esc(item.cityName || '')} · ${esc(item.spotName || '')}</p>
+                    ${weatherLine}
+                    <div class="flex items-center gap-4 text-xs text-gray-400">
+                        <span>👍 ${item.likeCount || 0}</span>
+                        <span>👁 ${item.viewCount || 0}</span>
+                        <span>💬 ${item.commentCount || 0}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // ===================== 目的地页（按城市聚合） =====================
+    function showDestinations() {
+        setActiveNav('destination');
+        switchMainView('destinationPage');
+        backToCityGrid();
+        document.getElementById('cityGrid').innerHTML =
+            '<p class="text-secondary col-span-3 text-center py-12">加载中...</p>';
+        ensureStrategies().then(renderCityGrid);
+    }
+
+    // 渲染城市卡片：封面取该城市第一篇有图攻略，展示攻略数与景点数
+    function renderCityGrid() {
+        const container = document.getElementById('cityGrid');
+        if (!allStrategies.length) {
+            container.innerHTML = '<p class="text-secondary col-span-3 text-center py-12">暂无攻略数据</p>';
+            return;
+        }
+        const cityMap = new Map();
+        allStrategies.forEach(item => {
+            const city = item.cityName || '未知城市';
+            if (!cityMap.has(city)) cityMap.set(city, { city, list: [], spots: new Set() });
+            const group = cityMap.get(city);
+            group.list.push(item);
+            if (item.spotName) group.spots.add(item.spotName);
+        });
+        // 攻略多的城市排前面
+        const groups = [...cityMap.values()].sort((a, b) => b.list.length - a.list.length);
+        container.innerHTML = groups.map(g => {
+            const cover = (g.list.find(i => i.imgUrl) || {}).imgUrl
+                || 'https://picsum.photos/400/250?random=city-' + encodeURIComponent(g.city);
+            // 内联事件用单引号包裹，JSON内的单引号转成HTML实体防止截断
+            const cityArg = JSON.stringify(g.city).replace(/'/g, '&#39;');
+            return `
+            <div class="bg-white rounded-xl shadow-sm overflow-hidden cursor-pointer hover:shadow-md transition" onclick='showCityStrategies(${cityArg})'>
+                <div class="w-full h-40 overflow-hidden">
+                    <img src="${esc(cover)}" class="w-full h-full object-cover" alt="">
+                </div>
+                <div class="p-5">
+                    <h3 class="font-medium mb-2 text-lg">${esc(g.city)}</h3>
+                    <p class="text-xs text-secondary">${g.list.length} 篇攻略 · ${g.spots.size} 个景点</p>
+                </div>
+            </div>
+        `;}).join('');
+    }
+
+    // 进入某城市的攻略列表（目的地页内子视图）
+    function showCityStrategies(city) {
+        currentCity = city;
+        setActiveNav('destination');
+        switchMainView('destinationPage');
+        document.getElementById('cityGridSection').classList.add('hidden');
+        document.getElementById('cityStrategySection').classList.remove('hidden');
+        document.getElementById('cityStrategyTitle').textContent = city + ' · 全部攻略';
+        const list = allStrategies.filter(i => (i.cityName || '未知城市') === city);
+        renderList('cityStrategyList', list);
+    }
+
+    // 返回城市总览
+    function backToCityGrid() {
+        document.getElementById('cityStrategySection').classList.add('hidden');
+        document.getElementById('cityGridSection').classList.remove('hidden');
+    }
+
+    // ===================== 分类页（按 category 字段筛选） =====================
+    // 从攻略数据中提取全部分类，已知分类按固定顺序，其他分类追加在后
+    function getCategories() {
+        const set = new Set();
+        allStrategies.forEach(i => { if (i.category) set.add(i.category); });
+        const known = CATEGORY_ORDER.filter(c => set.has(c));
+        const extra = [...set].filter(c => !CATEGORY_ORDER.includes(c));
+        return known.concat(extra);
+    }
+
+    // 生成导航栏分类下拉菜单
+    function buildCategoryMenu() {
+        const menu = document.getElementById('categoryMenu');
+        const cats = getCategories();
+        if (!cats.length) {
+            menu.innerHTML = '<span class="block px-4 py-2 text-xs text-gray-400">暂无分类</span>';
+            return;
+        }
+        menu.innerHTML = cats.map(c => {
+            const arg = JSON.stringify(c).replace(/'/g, '&#39;');
+            return `<a href="javascript:void(0)" onclick='showCategory(${arg})'
+                class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary">${esc(c)}</a>`;
+        }).join('');
+    }
+
+    function toggleCategoryMenu(e) {
+        e.stopPropagation();
+        document.getElementById('categoryMenu').classList.toggle('hidden');
+    }
+
+    function closeCategoryMenu() {
+        document.getElementById('categoryMenu').classList.add('hidden');
+    }
+
+    function closeCategoryMenuOnOutside(e) {
+        const menu = document.getElementById('categoryMenu');
+        if (menu && !menu.classList.contains('hidden') && !menu.parentElement.contains(e.target)) {
+            closeCategoryMenu();
+        }
+    }
+
+    // 进入分类页
+    function showCategory(category) {
+        currentCategory = category;
+        setActiveNav('category');
+        switchMainView('categoryPage');
+        closeCategoryMenu();
+        document.getElementById('categoryStrategyList').innerHTML =
+            '<p class="text-secondary col-span-3 text-center py-12">加载中...</p>';
+        ensureStrategies().then(() => renderCategoryPage(category));
+    }
+
+    // 渲染分类页：分类chips + 标签chips + 该分类攻略网格
+    function renderCategoryPage(category) {
+        // 分类筛选 chips
+        const cats = getCategories();
+        document.getElementById('categoryChips').innerHTML = cats.map(c => {
+            const arg = JSON.stringify(c).replace(/'/g, '&#39;');
+            const active = c === category;
+            return `<button onclick='showCategory(${arg})'
+                class="px-4 py-1.5 rounded-full text-sm border transition ${active
+                    ? 'bg-primary text-white border-primary'
+                    : 'bg-white text-secondary border-gray-200 hover:border-primary hover:text-primary'}">${esc(c)}</button>`;
+        }).join('');
+
+        // 标签筛选 chips（从数据中提取所有 tag，加上"热门"虚拟标签）
+        const tags = [...new Set(allStrategies.map(i => i.tag).filter(Boolean))];
+        const allTags = ['全部', ...tags];
+        document.getElementById('tagChips').innerHTML = allTags.map(t => {
+            const arg = JSON.stringify(t).replace(/'/g, '&#39;');
+            const active = (t === '全部' && !currentTag) || t === currentTag;
+            return `<button onclick='filterByTag(${arg})'
+                class="px-4 py-1.5 rounded-full text-sm border transition ${active
+                    ? 'bg-primary text-white border-primary'
+                    : 'bg-white text-secondary border-gray-200 hover:border-primary hover:text-primary'}">${esc(t)}</button>`;
+        }).join('');
+
+        // 按分类 + 标签筛选
+        let list = allStrategies.filter(i => i.category === category);
+        if (currentTag) {
+            list = list.filter(i => i.tag === currentTag);
+        }
+        renderList('categoryStrategyList', list);
+    }
+
+    // 切换标签筛选
+    function filterByTag(tag) {
+        currentTag = (tag === '全部') ? '' : tag;
+        renderCategoryPage(currentCategory);
+    }
+
+    // ===================== 个人中心 =====================
+    function showUserCenter() {
+        if (!requireLogin()) return;
+        setActiveNav('home'); // 个人中心不高亮主导航
+        switchMainView('userCenterPage');
+        // 头部信息
+        document.getElementById('ucAvatar').src = currentAvatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + encodeURIComponent(currentUsername);
+        document.getElementById('ucNickName').textContent = currentNickName || currentUsername || '用户';
+        document.getElementById('ucUsername').textContent = currentUsername;
+        document.getElementById('ucRole').textContent = isAdmin === 1 ? '管理员' : '普通用户';
+        // 默认加载我的发布
+        switchUCTab('published');
+    }
+
+    function switchUCTab(tab) {
+        ['published', 'likes', 'collects', 'comments'].forEach(t => {
+            const btn = document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1));
+            const panel = document.getElementById('uc' + t.charAt(0).toUpperCase() + t.slice(1));
+            if (t === tab) {
+                btn.className = 'px-4 py-2 text-sm font-medium border-b-2 border-primary text-primary';
+                panel.classList.remove('hidden');
+            } else {
+                btn.className = 'px-4 py-2 text-sm text-secondary border-b-2 border-transparent hover:text-primary';
+                panel.classList.add('hidden');
+            }
+        });
+        if (tab === 'published') loadMyPublished();
+        else if (tab === 'likes') loadMyLikes();
+        else if (tab === 'collects') loadMyCollects();
+        else if (tab === 'comments') loadMyComments();
+    }
+
+    // 我的发布
+    function loadMyPublished() {
+        document.getElementById('publishedList').innerHTML = '<p class="text-secondary text-center py-12">加载中...</p>';
+        request('/user/center/published').then(res => {
+            if (res.code !== 200) return;
+            const list = res.data || [];
+            const container = document.getElementById('publishedList');
+            if (!list.length) {
+                container.innerHTML = '<p class="text-secondary text-center py-12">还没有发布过攻略</p>';
+                return;
+            }
+            const statusText = { 0: '已下线', 1: '已上线', 2: '待审核' };
+            const statusColor = { 0: 'bg-gray-100 text-gray-600', 1: 'bg-green-50 text-green-600', 2: 'bg-yellow-50 text-yellow-600' };
+            container.innerHTML = list.map(item => `
+                <div class="bg-white rounded-lg shadow-sm p-4 flex items-center gap-4">
+                    <img src="${esc(item.imgUrl) || 'https://picsum.photos/100/100?random=' + item.id}" class="w-20 h-20 object-cover rounded-lg" alt="">
+                    <div class="flex-1 min-w-0">
+                        <h3 class="font-medium truncate">${esc(item.title)}</h3>
+                        <p class="text-xs text-secondary mt-1">${esc(item.cityName)} · ${esc(item.spotName)}</p>
+                        <p class="text-xs text-gray-400 mt-1">${item.createTime?.substring(0, 16) || ''} · 👁${item.viewCount || 0} 👍${item.likeCount || 0} 💬${item.commentCount || 0}</p>
+                    </div>
+                    <span class="px-2 py-0.5 text-xs rounded ${statusColor[item.status] || ''}">${statusText[item.status] || '未知'}</span>
+                    <div class="flex flex-col gap-2">
+                        ${item.status === 1
+                            ? `<button onclick="toggleStatus(${item.id}, 0)" class="text-xs text-gray-500 hover:text-red-500">下线</button>`
+                            : `<button onclick="toggleStatus(${item.id}, 1)" class="text-xs text-gray-500 hover:text-green-500">上线</button>`}
+                        <button onclick="openDetail(${item.id})" class="text-xs text-primary hover:underline">查看</button>
+                    </div>
+                </div>
+            `).join('');
+        });
+    }
+
+    // 上下线切换
+    function toggleStatus(id, status) {
+        request('/strategy/status/' + id + '?status=' + status, 'PUT').then(res => {
+            if (res.code === 200) {
+                loadMyPublished();
+            } else if (res.code !== 401) {
+                alert(res.msg || '操作失败');
+            }
+        });
+    }
+
+    // 我的点赞
+    function loadMyLikes() {
+        document.getElementById('likesList').innerHTML = '<p class="text-secondary col-span-3 text-center py-12">加载中...</p>';
+        request('/user/center/likes').then(res => {
+            if (res.code !== 200) return;
+            const list = res.data || [];
+            const container = document.getElementById('likesList');
+            if (!list.length) {
+                container.innerHTML = '<p class="text-secondary col-span-3 text-center py-12">还没有点赞过攻略</p>';
+                return;
+            }
+            container.innerHTML = list.map(renderMyStrategyCard).join('');
+        });
+    }
+
+    // 我的收藏
+    function loadMyCollects() {
+        document.getElementById('collectsList').innerHTML = '<p class="text-secondary col-span-3 text-center py-12">加载中...</p>';
+        request('/user/center/collects').then(res => {
+            if (res.code !== 200) return;
+            const list = res.data || [];
+            const container = document.getElementById('collectsList');
+            if (!list.length) {
+                container.innerHTML = '<p class="text-secondary col-span-3 text-center py-12">还没有收藏过攻略</p>';
+                return;
+            }
+            container.innerHTML = list.map(renderMyStrategyCard).join('');
+        });
+    }
+
+    // 我的评论
+    function loadMyComments() {
+        document.getElementById('commentsList').innerHTML = '<p class="text-secondary text-center py-12">加载中...</p>';
+        request('/user/center/comments').then(res => {
+            if (res.code !== 200) return;
+            const list = res.data || [];
+            const container = document.getElementById('commentsList');
+            if (!list.length) {
+                container.innerHTML = '<p class="text-secondary text-center py-12">还没有发表过评论</p>';
+                return;
+            }
+            container.innerHTML = list.map(item => `
+                <div class="bg-white rounded-lg shadow-sm p-4">
+                    <p class="text-sm text-gray-700 mb-2">${esc(item.commentContent || '')}</p>
+                    <p class="text-xs text-gray-400">攻略ID: ${item.strategyId} · ${item.createTime?.substring(0, 16) || ''}</p>
+                    <div class="flex gap-3 mt-2">
+                        <button onclick="openDetail(${item.strategyId})" class="text-xs text-primary hover:underline">查看攻略</button>
+                        <button onclick="deleteComment(${item.id})" class="text-xs text-red-500 hover:underline">删除</button>
+                    </div>
+                </div>
+            `).join('');
+        });
+    }
+
+    // 个人中心用的攻略卡片（点赞/收藏列表）
+    function renderMyStrategyCard(item) {
+        return `
+            <div class="bg-white rounded-xl shadow-sm overflow-hidden cursor-pointer hover:shadow-md transition" onclick="openDetail(${item.id})">
+                <div class="w-full h-40">
+                    <img src="${esc(item.imgUrl) || 'https://picsum.photos/400/250?random=' + item.id}" class="w-full h-full object-cover" alt="">
+                </div>
+                <div class="p-4">
+                    <h3 class="font-medium text-sm mb-1 truncate">${esc(item.title || '无标题')}</h3>
+                    <p class="text-xs text-secondary mb-2">${esc(item.cityName || '')} · ${esc(item.spotName || '')}</p>
+                    <div class="flex items-center gap-3 text-xs text-gray-400">
+                        <span>👍 ${item.likeCount || 0}</span>
+                        <span>💬 ${item.commentCount || 0}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // ===================== 管理员后台 =====================
+    function showAdmin() {
+        if (!requireLogin()) return;
+        if (isAdmin !== 1) return alert('仅管理员可访问');
+        switchMainView('adminPage');
+        loadAdminStats();
+        switchAdminTab('strategies');
+    }
+
+    function switchAdminTab(tab) {
+        ['strategies', 'users', 'hot'].forEach(t => {
+            const btn = document.getElementById('adminTab' + t.charAt(0).toUpperCase() + t.slice(1));
+            const panel = document.getElementById('admin' + t.charAt(0).toUpperCase() + t.slice(1));
+            if (t === tab) {
+                btn.className = 'px-4 py-2 text-sm font-medium border-b-2 border-primary text-primary';
+                panel.classList.remove('hidden');
+            } else {
+                btn.className = 'px-4 py-2 text-sm text-secondary border-b-2 border-transparent hover:text-primary';
+                panel.classList.add('hidden');
+            }
+        });
+        if (tab === 'strategies') loadAdminStrategies(null);
+        else if (tab === 'users') loadAdminUsers();
+        else if (tab === 'hot') loadAdminHot();
+    }
+
+    // 统计面板
+    function loadAdminStats() {
+        request('/admin/stats').then(res => {
+            if (res.code !== 200) return;
+            const s = res.data || {};
+            const cards = [
+                { label: '用户总数', value: s.userCount, icon: '👥', color: 'bg-blue-50 text-blue-600' },
+                { label: '攻略总数', value: s.strategyCount, icon: '📝', color: 'bg-green-50 text-green-600' },
+                { label: '总浏览量', value: s.totalViews, icon: '👁', color: 'bg-purple-50 text-purple-600' },
+                { label: '待审核', value: s.pendingCount, icon: '⏳', color: 'bg-yellow-50 text-yellow-600' }
+            ];
+            document.getElementById('statsPanel').innerHTML = cards.map(c => `
+                <div class="bg-white rounded-xl shadow-sm p-5">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-secondary">${c.label}</p>
+                            <p class="text-2xl font-semibold mt-1">${c.value || 0}</p>
+                        </div>
+                        <span class="text-2xl">${c.icon}</span>
+                    </div>
+                </div>
+            `).join('');
+        });
+    }
+
+    // 攻略管理列表
+    function loadAdminStrategies(status) {
+        let url = '/admin/strategies?pageNum=1&pageSize=100';
+        if (status !== null && status !== undefined) url += '&status=' + status;
+        request(url).then(res => {
+            if (res.code !== 200) return;
+            const list = (res.data && res.data.records) || [];
+            const statusText = { 0: '已下线', 1: '已上线', 2: '待审核' };
+            const statusColor = { 0: 'bg-gray-100 text-gray-600', 1: 'bg-green-50 text-green-600', 2: 'bg-yellow-50 text-yellow-600' };
+            document.getElementById('adminStrategyTbody').innerHTML = list.map(item => `
+                <tr class="border-t hover:bg-gray-50">
+                    <td class="px-4 py-3">${item.id}</td>
+                    <td class="px-4 py-3 max-w-[200px] truncate">${esc(item.title)}</td>
+                    <td class="px-4 py-3">${esc(item.cityName)}</td>
+                    <td class="px-4 py-3">${esc(item.category)}</td>
+                    <td class="px-4 py-3"><span class="px-2 py-0.5 text-xs rounded ${statusColor[item.status] || ''}">${statusText[item.status] || ''}</span></td>
+                    <td class="px-4 py-3">${item.viewCount || 0}</td>
+                    <td class="px-4 py-3">${item.likeCount || 0}</td>
+                    <td class="px-4 py-3">
+                        <div class="flex gap-2">
+                            ${item.status === 2 ? `
+                                <button onclick="auditStrategy(${item.id}, 1)" class="text-xs text-green-600 hover:underline">通过</button>
+                                <button onclick="auditStrategy(${item.id}, 0)" class="text-xs text-red-500 hover:underline">驳回</button>
+                            ` : item.status === 1 ? `
+                                <button onclick="adminToggleStatus(${item.id}, 0)" class="text-xs text-gray-500 hover:underline">下线</button>
+                            ` : `
+                                <button onclick="adminToggleStatus(${item.id}, 1)" class="text-xs text-green-600 hover:underline">上线</button>
+                            `}
+                            <button onclick="openAdminEdit(${item.id})" class="text-xs text-primary hover:underline">编辑</button>
+                            <button onclick="adminDeleteStrategy(${item.id})" class="text-xs text-red-500 hover:underline">删除</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('') || '<tr><td colspan="8" class="px-4 py-8 text-center text-secondary">暂无数据</td></tr>';
+        });
+    }
+
+    // 审核攻略
+    function auditStrategy(id, status) {
+        request('/admin/strategies/' + id + '/audit?status=' + status, 'PUT').then(res => {
+            if (res.code === 200) {
+                alert(status === 1 ? '审核通过，攻略已上线' : '已驳回，攻略已下线');
+                loadAdminStats();
+                loadAdminStrategies(null);
+            } else if (res.code !== 401) alert(res.msg || '操作失败');
+        });
+    }
+
+    // 上下线
+    function adminToggleStatus(id, status) {
+        request('/strategy/status/' + id + '?status=' + status, 'PUT').then(res => {
+            if (res.code === 200) {
+                loadAdminStrategies(null);
+            } else if (res.code !== 401) alert(res.msg || '操作失败');
+        });
+    }
+
+    // 删除攻略
+    function adminDeleteStrategy(id) {
+        if (!confirm('确定删除这篇攻略吗？')) return;
+        request('/admin/strategies/' + id, 'DELETE').then(res => {
+            if (res.code === 200) {
+                alert('删除成功');
+                loadAdminStats();
+                loadAdminStrategies(null);
+            } else if (res.code !== 401) alert(res.msg || '删除失败');
+        });
+    }
+
+    // 管理员新增/编辑攻略（复用发布弹窗，管理员可直接上线）
+    function openAdminPublish() {
+        editingId = null;
+        isAdminPublish = true;
+        document.getElementById('publishTitle').textContent = '新增攻略（管理员，直接上线）';
+        fillPublishForm({});
+        document.getElementById('publishModal').classList.remove('hidden');
+    }
+
+    function openAdminEdit(id) {
+        request('/admin/strategies/' + id).then(res => {
+            if (res.code !== 200 || !res.data) return;
+            editingId = id;
+            isAdminPublish = true;
+            document.getElementById('publishTitle').textContent = '编辑攻略（管理员）';
+            fillPublishForm(res.data);
+            document.getElementById('publishModal').classList.remove('hidden');
+        });
+    }
+
+    // 用户管理列表
+    function loadAdminUsers() {
+        request('/admin/users?pageNum=1&pageSize=100').then(res => {
+            if (res.code !== 200) return;
+            const list = (res.data && res.data.records) || [];
+            document.getElementById('adminUserTbody').innerHTML = list.map(u => `
+                <tr class="border-t hover:bg-gray-50">
+                    <td class="px-4 py-3">${u.id}</td>
+                    <td class="px-4 py-3">${esc(u.username)}</td>
+                    <td class="px-4 py-3">${esc(u.nickName || '-')}</td>
+                    <td class="px-4 py-3">${esc(u.email || '-')}</td>
+                    <td class="px-4 py-3">${u.isAdmin === 1 ? '<span class="text-red-500">管理员</span>' : '普通用户'}</td>
+                    <td class="px-4 py-3">${u.status === 0 ? '<span class="text-red-500">已禁用</span>' : '<span class="text-green-600">正常</span>'}</td>
+                    <td class="px-4 py-3">${u.createTime?.substring(0, 10) || ''}</td>
+                    <td class="px-4 py-3">
+                        ${u.isAdmin !== 1 ? (u.status === 1
+                            ? `<button onclick="adminToggleUserStatus(${u.id}, 0)" class="text-xs text-red-500 hover:underline">禁用</button>`
+                            : `<button onclick="adminToggleUserStatus(${u.id}, 1)" class="text-xs text-green-600 hover:underline">启用</button>`) : '-'}
+                    </td>
+                </tr>
+            `).join('') || '<tr><td colspan="8" class="px-4 py-8 text-center text-secondary">暂无数据</td></tr>';
+        });
+    }
+
+    // 启用/禁用用户
+    function adminToggleUserStatus(id, status) {
+        request('/admin/users/' + id + '/status?status=' + status, 'PUT').then(res => {
+            if (res.code === 200) {
+                alert(status === 1 ? '已启用' : '已禁用');
+                loadAdminUsers();
+            } else if (res.code !== 401) alert(res.msg || '操作失败');
+        });
+    }
+
+    // 热门排行
+    function loadAdminHot() {
+        request('/strategy/hot?limit=10').then(res => {
+            if (res.code !== 200) return;
+            const list = res.data || [];
+            document.getElementById('hotList').innerHTML = list.map((item, idx) => `
+                <div class="bg-white rounded-lg shadow-sm p-4 flex items-center gap-4">
+                    <span class="text-2xl font-bold ${idx < 3 ? 'text-red-500' : 'text-gray-400'} w-8">${idx + 1}</span>
+                    <img src="${esc(item.imgUrl) || 'https://picsum.photos/60/60?random=' + item.id}" class="w-12 h-12 object-cover rounded" alt="">
+                    <div class="flex-1">
+                        <h4 class="font-medium">${esc(item.title)}</h4>
+                        <p class="text-xs text-secondary">${esc(item.cityName)} · ${esc(item.spotName)}</p>
+                    </div>
+                    <div class="text-right text-sm text-gray-500">
+                        <p>👁 ${item.viewCount || 0}</p>
+                        <p>👍 ${item.likeCount || 0}</p>
+                    </div>
+                </div>
+            `).join('') || '<p class="text-secondary text-center py-12">暂无数据</p>';
+        });
+    }
+
+    // ===================== 详情页 =====================
+    // 卡片统一入口：先记录来源视图，再打开详情，返回时恢复原页面
+    function openDetail(id) {
+        if (!document.getElementById('userCenterPage').classList.contains('hidden')) {
+            detailReturn = { type: 'userCenter' };
+        } else if (!document.getElementById('categoryPage').classList.contains('hidden')) {
+            detailReturn = { type: 'category', param: currentCategory };
+        } else if (!document.getElementById('destinationPage').classList.contains('hidden')) {
+            detailReturn = document.getElementById('cityStrategySection').classList.contains('hidden')
+                ? { type: 'destination' }
+                : { type: 'city', param: currentCity };
+        } else {
+            detailReturn = { type: 'home', param: lastKeyword };
+        }
+        showDetail(id);
+    }
+
+    function showDetail(id) {
+        currentStrategyId = id;
+        switchMainView('detailPage');
+        resetAiChat();
+        loadDetail(id);
+        loadCommentList(id);
+    }
+
+    // 详情页返回：按来源恢复首页/目的地/城市/分类
+    function backFromDetail() {
+        const r = detailReturn || { type: 'home' };
+        currentStrategyId = null;
+        currentDetail = null;
+        if (r.type === 'userCenter') {
+            showUserCenter();
+        } else if (r.type === 'category') {
+            showCategory(r.param);
+        } else if (r.type === 'city') {
+            showCityStrategies(r.param);
+        } else if (r.type === 'destination') {
+            showDestinations();
+        } else {
+            lastKeyword = r.param || '';
+            showHome();
+        }
+    }
+
+    // 加载攻略详情（字段对齐StrategyDetailVO）
+    // 加载详情时重置 AI 问答区
+    function resetAiChat() {
+        const box = document.getElementById('aiChatBox');
+        box.innerHTML = `
+            <div class="flex gap-2">
+                <span class="text-lg">🤖</span>
+                <div class="bg-white rounded-lg px-3 py-2 text-sm text-gray-700 shadow-sm">
+                    你好！我是你的旅游小助手，关于这个景点有什么想问的吗？<br>
+                    比如：交通路线、美食推荐、住宿建议、门票价格、最佳游玩季节等~
+                </div>
+            </div>`;
+    }
+
+    // 快捷提问
+    function askAiQuick(question) {
+        document.getElementById('aiQuestionInput').value = question;
+        askAi();
+    }
+
+    // AI 问答：携带当前攻略ID，后端自动注入景点上下文
+    function askAi() {
+        if (!requireLogin()) return;
+        const input = document.getElementById('aiQuestionInput');
+        const question = input.value.trim();
+        if (!question) return;
+
+        const box = document.getElementById('aiChatBox');
+        // 显示用户问题
+        box.innerHTML += `
+            <div class="flex gap-2 justify-end">
+                <div class="bg-primary text-white rounded-lg px-3 py-2 text-sm max-w-[80%]">${esc(question)}</div>
+                <span class="text-lg">👤</span>
+            </div>`;
+        box.scrollTop = box.scrollHeight;
+        input.value = '';
+
+        // 显示"思考中"
+        const thinkingId = 'ai-thinking-' + Date.now();
+        box.innerHTML += `
+            <div id="${thinkingId}" class="flex gap-2">
+                <span class="text-lg">🤖</span>
+                <div class="bg-white rounded-lg px-3 py-2 text-sm text-gray-400 shadow-sm">思考中...</div>
+            </div>`;
+        box.scrollTop = box.scrollHeight;
+
+        // 调用后端 AI 接口
+        request('/ai/ask', 'POST', {
+            strategyId: currentStrategyId,
+            question: question
+        }).then(res => {
+            const thinkingEl = document.getElementById(thinkingId);
+            if (res.code === 200) {
+                const answer = res.data || '抱歉，我暂时无法回答这个问题。';
+                thinkingEl.innerHTML = `
+                    <span class="text-lg">🤖</span>
+                    <div class="bg-white rounded-lg px-3 py-2 text-sm text-gray-700 shadow-sm whitespace-pre-wrap">${esc(answer)}</div>`;
+            } else if (res.code !== 401) {
+                thinkingEl.innerHTML = `
+                    <span class="text-lg">🤖</span>
+                    <div class="bg-white rounded-lg px-3 py-2 text-sm text-red-500 shadow-sm">${esc(res.msg || '回答失败')}</div>`;
+            }
+            box.scrollTop = box.scrollHeight;
+        });
+    }
+
+    function loadDetail(id) {
+        request('/strategy/detail/' + id).then(res => {
+            if (res.code === 200 && res.data) {
+                const data = res.data;
+                currentDetail = data;
+
+                document.getElementById('detailTitle').textContent = data.title || '攻略详情';
+                document.getElementById('detailCity').textContent = data.cityName || '';
+                document.getElementById('detailSpot').textContent = data.spotName || '';
+                document.getElementById('detailTime').textContent = data.createTime?.substring(0, 10) || '';
+                document.getElementById('detailViewCount').textContent = data.viewCount || 0;
+                document.getElementById('detailImg').src = data.imgUrl || 'https://picsum.photos/800/300?random=' + id;
+                document.getElementById('detailContent').textContent = data.content || '';
+
+                // 标签 / 分类 / 热门角标
+                const tagEl = document.getElementById('detailTag');
+                tagEl.classList.toggle('hidden', !data.tag);
+                tagEl.textContent = data.tag || '';
+                const catEl = document.getElementById('detailCategory');
+                catEl.classList.toggle('hidden', !data.category);
+                catEl.textContent = data.category || '';
+                document.getElementById('detailHot').classList.toggle('hidden', data.isHot !== true);
+
+                // 天气与出行提示（后端接口失败时已有降级默认值）
+                document.getElementById('detailWeather').textContent = data.weather || '--';
+                document.getElementById('detailTemperature').textContent = data.temperature || '--';
+                document.getElementById('detailTravelTip').textContent = data.travelTip ? '💡 ' + data.travelTip : '';
+
+                // 点赞 / 收藏计数
+                document.getElementById('likeCount').textContent = data.likeCount || 0;
+                document.getElementById('collectCount').textContent = data.collectCount || 0;
+                document.getElementById('commentCount').textContent = 0;
+
+                // 重置点赞/收藏按钮状态（后端未提供"我是否已点赞"查询接口，以本地状态为准）
+                isLiked = false;
+                isCollected = false;
+                document.getElementById('likeBtn').style.color = '';
+                document.getElementById('collectBtn').style.color = '';
+
+                // 编辑/删除按钮：仅管理员可见
+                // （StrategyDetailVO未返回authorId，作者身份无法在前端判断，后端会做权限校验）
+                document.getElementById('authorActions').classList.toggle('hidden', isAdmin !== 1);
+            } else if (res.code !== 401) {
+                alert(res.msg || '攻略不存在或已下线');
+                backFromDetail();
+            }
+        });
+    }
+
+    // 点赞切换：后端返回新的点赞状态布尔值
+    function toggleLike() {
+        if (!requireLogin()) return;
+        request('/strategy/like/' + currentStrategyId, 'POST').then(res => {
+            if (res.code === 200) {
+                isLiked = res.data;
+                const countEl = document.getElementById('likeCount');
+                let count = parseInt(countEl.textContent) || 0;
+                countEl.textContent = isLiked ? count + 1 : Math.max(0, count - 1);
+                document.getElementById('likeBtn').style.color = isLiked ? '#ef4444' : '';
+            } else if (res.code !== 401) {
+                alert(res.msg);
+            }
+        });
+    }
+
+    // 收藏切换：后端返回新的收藏状态布尔值
+    function toggleCollect() {
+        if (!requireLogin()) return;
+        request('/strategy/collect/' + currentStrategyId, 'POST').then(res => {
+            if (res.code === 200) {
+                isCollected = res.data;
+                const countEl = document.getElementById('collectCount');
+                let count = parseInt(countEl.textContent) || 0;
+                countEl.textContent = isCollected ? count + 1 : Math.max(0, count - 1);
+                document.getElementById('collectBtn').style.color = isCollected ? '#eab308' : '';
+            } else if (res.code !== 401) {
+                alert(res.msg);
+            }
+        });
+    }
+
+    // ===================== 评论 =====================
+    // 加载评论列表（公开接口）
+    function loadCommentList(strategyId) {
+        request('/strategy/comment/list/' + strategyId).then(res => {
+            if (res.code === 200) {
+                renderCommentList(res.data);
+                // 加载完评论后更新详情页的评论计数
+                document.getElementById('commentCount').textContent = res.data ? res.data.length : 0;
+            }
+        });
+    }
+
+    // 渲染评论列表（含昵称头像 + 二级回复楼中楼）
+    // 后端返回 CommentVO：{ id, userId, nickName, avatar, commentContent, createTime, replies: [...] }
+    function renderCommentList(list) {
+        const container = document.getElementById('commentList');
+        if (!list || list.length === 0) {
+            container.innerHTML = '<p class="text-sm text-secondary text-center py-6">暂无评论，快来抢沙发吧</p>';
+            return;
+        }
+        container.innerHTML = list.map(renderCommentItem).join('');
+    }
+
+    // 渲染单条评论（含回复列表）
+    function renderCommentItem(item) {
+        const canDelete = currentUserId && String(item.userId) === currentUserId;
+        const avatar = item.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + encodeURIComponent(item.userId);
+        const repliesHtml = (item.replies && item.replies.length)
+            ? item.replies.map(r => renderReplyItem(r)).join('')
+            : '';
+        return `
+        <div class="border-b border-gray-100 pb-4 last:border-0">
+            <div class="flex gap-3">
+                <img src="${esc(avatar)}" class="w-9 h-9 rounded-full object-cover border border-gray-200 shrink-0" alt="">
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="text-sm font-medium text-gray-800">${esc(item.nickName || '用户' + item.userId)}</span>
+                        <span class="text-xs text-gray-400">${esc(item.createTime?.substring(0, 16) || '')}</span>
+                    </div>
+                    <p class="text-sm text-gray-700 mb-2">${esc(item.commentContent || '')}</p>
+                    <div class="flex gap-4 text-xs text-gray-400">
+                        <button onclick="replyToComment(${item.id})" class="hover:text-primary">回复</button>
+                        ${canDelete ? `<button onclick="deleteComment(${item.id})" class="hover:text-red-500">删除</button>` : ''}
+                    </div>
+                    <!-- 二级回复 -->
+                    <div class="mt-3 space-y-3 pl-2 border-l-2 border-gray-100">
+                        ${repliesHtml}
+                    </div>
+                </div>
+            </div>
+        </div>
+        `;
+    }
+
+    // 渲染二级回复
+    function renderReplyItem(item) {
+        const canDelete = currentUserId && String(item.userId) === currentUserId;
+        const avatar = item.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + encodeURIComponent(item.userId);
+        return `
+        <div class="flex gap-2">
+            <img src="${esc(avatar)}" class="w-7 h-7 rounded-full object-cover border border-gray-200 shrink-0" alt="">
+            <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 mb-1">
+                    <span class="text-xs font-medium text-gray-700">${esc(item.nickName || '用户' + item.userId)}</span>
+                    <span class="text-xs text-gray-400">${esc(item.createTime?.substring(0, 16) || '')}</span>
+                </div>
+                <p class="text-sm text-gray-600">${esc(item.commentContent || '')}</p>
+                ${canDelete ? `<button onclick="deleteComment(${item.id})" class="text-xs text-gray-400 hover:text-red-500 mt-1">删除</button>` : ''}
+            </div>
+        </div>
+        `;
+    }
+
+    // 回复某条评论：复用顶部输入框，设置 parentId
+    function replyToComment(commentId) {
+        if (!requireLogin()) return;
+        const input = document.getElementById('commentInput');
+        input.focus();
+        input.placeholder = '回复评论...';
+        // 用 dataset 存当前回复的父评论ID
+        input.dataset.replyTo = commentId;
+    }
+
+    // 发布评论：请求体对齐CommentDTO { strategyId, content, parentId }
+    function addComment() {
+        if (!requireLogin()) return;
+        const input = document.getElementById('commentInput');
+        const content = input.value.trim();
+        if (!content) return alert('评论内容不能为空');
+        const parentId = input.dataset.replyTo ? Number(input.dataset.replyTo) : null;
+
+        request('/strategy/comment', 'POST', {
+            strategyId: currentStrategyId,
+            content: content,
+            parentId: parentId
+        }).then(res => {
+            if (res.code === 200) {
+                input.value = '';
+                input.placeholder = '写下你的评论...';
+                delete input.dataset.replyTo;
+                loadCommentList(currentStrategyId);
+            } else if (res.code !== 401) {
+                alert(res.msg);
+            }
+        });
+    }
+
+    // 删除评论（仅本人，后端校验）
+    function deleteComment(commentId) {
+        if (!confirm('确定删除这条评论吗？')) return;
+        request('/strategy/comment/' + commentId, 'DELETE').then(res => {
+            if (res.code === 200) {
+                loadCommentList(currentStrategyId);
+            } else if (res.code !== 401) {
+                alert(res.msg);
+            }
+        });
+    }
+
+    // ===================== 发布 / 编辑 / 删除攻略 =====================
+    // 发布攻略：未登录先弹登录框
+    function openPublishModal() {
+        if (!requireLogin()) return;
+        editingId = null;
+        isAdminPublish = false;
+        document.getElementById('publishTitle').textContent = '发布攻略';
+        fillPublishForm({});
+        document.getElementById('publishModal').classList.remove('hidden');
+    }
+
+    // 编辑攻略：用当前详情数据回填
+    function openEditModal() {
+        if (!currentDetail) return;
+        editingId = currentStrategyId;
+        isAdminPublish = false;
+        document.getElementById('publishTitle').textContent = '编辑攻略';
+        fillPublishForm(currentDetail);
+        document.getElementById('publishModal').classList.remove('hidden');
+    }
+
+    function fillPublishForm(data) {
+        document.getElementById('pubTitle').value = data.title || '';
+        document.getElementById('pubCity').value = data.cityName || '';
+        document.getElementById('pubSpot').value = data.spotName || '';
+        document.getElementById('pubTag').value = data.tag || '';
+        document.getElementById('pubCategory').value = data.category || '';
+        document.getElementById('pubImgUrl').value = data.imgUrl || '';
+        document.getElementById('pubContent').value = data.content || '';
+        const preview = document.getElementById('pubImgPreview');
+        if (data.imgUrl) {
+            preview.src = data.imgUrl;
+            preview.classList.remove('hidden');
+        } else {
+            preview.classList.add('hidden');
+        }
+        document.getElementById('pubImgFile').value = '';
+    }
+
+    function closePublishModal() {
+        document.getElementById('publishModal').classList.add('hidden');
+        editingId = null;
+    }
+
+    // 封面图上传：POST /file/upload（multipart），返回七牛云图片URL
+    function uploadCover() {
+        const fileInput = document.getElementById('pubImgFile');
+        const file = fileInput.files[0];
+        if (!file) return;
+        if (!requireLogin()) return;
+
+        const formData = new FormData();
+        formData.append('file', file);
+        // 上传接口不能设置Content-Type，由浏览器自动生成multipart边界
+        fetch('/file/upload', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + token },
+            body: formData
+        }).then(res => res.json()).then(res => {
+            if (res.code === 200 && res.data) {
+                document.getElementById('pubImgUrl').value = res.data;
+                const preview = document.getElementById('pubImgPreview');
+                preview.src = res.data;
+                preview.classList.remove('hidden');
+                alert('封面上传成功');
+            } else {
+                alert(res.msg || '上传失败');
+            }
+        });
+    }
+
+    // 提交发布/编辑：请求体对齐StrategyPublishDTO
+    let isAdminPublish = false; // 标记是否管理员后台发布
+
+    function submitPublish() {
+        const payload = {
+            title: document.getElementById('pubTitle').value.trim(),
+            cityName: document.getElementById('pubCity').value.trim(),
+            spotName: document.getElementById('pubSpot').value.trim(),
+            tag: document.getElementById('pubTag').value || null,
+            category: document.getElementById('pubCategory').value || null,
+            imgUrl: document.getElementById('pubImgUrl').value || null,
+            content: document.getElementById('pubContent').value.trim()
+        };
+        if (!payload.title) return alert('请填写攻略标题');
+        if (!payload.cityName) return alert('请填写城市名称');
+        if (!payload.spotName) return alert('请填写景点名称');
+        if (!payload.content) return alert('请填写攻略正文');
+
+        if (editingId) {
+            // 编辑：必传id，PUT /strategy/update
+            payload.id = editingId;
+            request('/strategy/update', 'PUT', payload).then(res => {
+                if (res.code === 200) {
+                    alert('修改成功');
+                    closePublishModal();
+                    // 管理员编辑后刷新后台列表
+                    if (isAdminPublish) {
+                        loadAdminStrategies(null);
+                    } else {
+                        loadDetail(currentStrategyId);
+                        fetchAllStrategies();
+                    }
+                } else if (res.code !== 401) {
+                    alert(res.msg || '修改失败');
+                }
+            });
+        } else {
+            // 管理员后台发布：直接上线；普通用户发布：待审核
+            if (isAdminPublish) payload.status = 1;
+            request('/strategy/publish', 'POST', payload).then(res => {
+                if (res.code === 200) {
+                    if (isAdminPublish) {
+                        alert('发布成功，攻略已上线');
+                        closePublishModal();
+                        loadAdminStats();
+                        loadAdminStrategies(null);
+                    } else {
+                        alert('发布成功，攻略已提交审核，审核通过后将在首页展示');
+                        closePublishModal();
+                        showUserCenter();
+                        switchUCTab('published');
+                    }
+                } else if (res.code !== 401) {
+                    alert(res.msg || '发布失败');
+                }
+            });
+        }
+    }
+
+    // 删除攻略（后端校验：作者或管理员）
+    function deleteStrategy() {
+        if (!confirm('确定删除这篇攻略吗？删除后不可恢复！')) return;
+        request('/strategy/delete/' + currentStrategyId, 'DELETE').then(res => {
+            if (res.code === 200) {
+                alert('删除成功');
+                // 先刷新缓存，再按来源返回（目的地/分类页才能立即消失）
+                fetchAllStrategies().then(() => {
+                    if (detailReturn && detailReturn.type === 'city') {
+                        showCityStrategies(detailReturn.param);
+                    } else if (detailReturn && detailReturn.type === 'category') {
+                        showCategory(detailReturn.param);
+                    } else {
+                        showHome();
+                    }
+                });
+            } else if (res.code !== 401) {
+                alert(res.msg || '删除失败');
+            }
+        });
+    }
+</script>
+</body>
+</html>
